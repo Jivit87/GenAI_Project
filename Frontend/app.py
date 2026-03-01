@@ -64,9 +64,9 @@ with st.form("prediction_form"):
     with col1:
         bedrooms = st.number_input("No of Bedrooms", min_value=1, max_value=30, value=3, step=1)
     with col2:
-        bathrooms = st.number_input("No of Bathrooms", min_value=0.5, max_value=10.0, value=2.0, step=0.25)
+        bathrooms = st.number_input("No of Bathrooms", min_value=1, max_value=10, value=2, step=1)
     with col3:
-        floors = st.number_input("No of Floors", min_value=1.0, max_value=5.0, value=1.0, step=0.5)
+        floors = st.number_input("No of Floors", min_value=1, max_value=5, value=1, step=1)
         
     st.write("---")
     st.subheader("2. Area Details (in Sqft)")
@@ -79,7 +79,6 @@ with st.form("prediction_form"):
         lot_area_renov = st.number_input("Lot Area after Renovation", min_value=100.0, value=5000.0, step=10.0)
     with col6:
         basement_area = st.number_input("Basement Area", min_value=0, value=0, step=10)
-        # We calculate area from basement dynamically or let user input it
         area_from_basement = st.number_input("Area from Basement", min_value=100.0, value=1500.0, step=10.0, help="Typically Flat Area - Basement Area")
 
     st.write("---")
