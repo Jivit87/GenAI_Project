@@ -1,11 +1,9 @@
 import os
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
-
 from agent.tools import predict_property_price, get_comparable_properties
 from utils.report_formatter import format_report
 
-# Try to load the RAG search function. If it fails, use a backup warning message.
 try:
     from rag.retriever import search_text_database
 except ImportError:
@@ -14,22 +12,17 @@ except ImportError:
 
 
 def intake_node(state: dict) -> dict:
-    """Step 1: Check the data coming in from the user website."""
     return state
 
 
 def price_prediction_node(state: dict) -> dict:
-    """Step 2: Ask the Machine Learning model to calculate the house price."""
     property_details = state["property_features"]
     
-    # Send the details to the ML model wrapper
     prediction_result = predict_property_price.invoke({"features": property_details})
     
-    # Save the answers back into our state (the shared notebook)
     state["predicted_price"] = prediction_result["predicted_price"]
     state["price_range"]     = prediction_result["price_range"]
 
-    # Also grab 3 fake similar properties to show the user
     similar_properties = get_comparable_properties.invoke({
         "location": str(property_details.get("latitude", "Unknown Area")),
         "price": state["predicted_price"],
@@ -41,13 +34,11 @@ def price_prediction_node(state: dict) -> dict:
 
 
 def rag_retrieval_node(state: dict) -> dict:
-    """Step 3: Search our saved text files for helpful market advice."""
     search_query = (
         f"Real estate market trends. "
         f"Investment outlook for properties around ${state['predicted_price']}."
     )
     
-    # Get top 3 paragraphs from our FAISS database
     helpful_documents = search_text_database(search_query, max_results=3)
     state["retrieved_market_docs"] = helpful_documents
     
@@ -55,25 +46,20 @@ def rag_retrieval_node(state: dict) -> dict:
 
 
 def market_analysis_node(state: dict) -> dict:
-    """Step 4: Ask the Groq AI to read the documents and write an analysis."""
     api_key = os.getenv("GROQ_API_KEY", "")
     
-    # Safety check: Prevent crash if API key is missing
     if not api_key or api_key == "your_groq_api_key_here":
         state["market_analysis"] = "Groq API key is missing. Add it to .env to enable the AI writer."
         return state
 
-    # Connect to the AI Model
     ai_model = ChatGroq(
         model_name="llama-3.1-8b-instant",
-        temperature=0.3, # Low temperature keeps the AI factual and boring, which is good here
+        temperature=0.3,
         groq_api_key=api_key
     )
 
-    # Combine all the text files we found into one big string
     found_context = "\n".join(state.get("retrieved_market_docs", []))
     
-    # Set the rules for the AI
     system_rules = "You are a professional real estate analyst. Be concise."
     user_request = f"""
     Write a short 2-paragraph market analysis for a property.
@@ -87,14 +73,12 @@ def market_analysis_node(state: dict) -> dict:
     - End with a one-sentence investment risk summary (Low/Medium/High).
     """
 
-    # Send the request to the AI
     messages = [
         SystemMessage(content=system_rules),
         HumanMessage(content=user_request)
     ]
     ai_response = ai_model.invoke(messages)
     
-    # Save what the AI wrote
     state["market_analysis"] = ai_response.content
     return state
 

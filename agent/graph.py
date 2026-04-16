@@ -14,7 +14,6 @@ def build_graph():
  
     workflow = StateGraph(AgentState)
 
-    # Register each step (node) in the workflow
     workflow.add_node("intake",            intake_node)
     workflow.add_node("price_prediction",  price_prediction_node)
     workflow.add_node("rag_retrieval",     rag_retrieval_node)
@@ -22,7 +21,7 @@ def build_graph():
     workflow.add_node("report_generation", report_generation_node)
     workflow.add_node("disclaimer",        disclaimer_node)
 
-    # Define the order: intake → price → rag → analysis → report → disclaimer → END
+
     workflow.set_entry_point("intake")
     workflow.add_edge("intake",            "price_prediction")
     workflow.add_edge("price_prediction",  "rag_retrieval")
