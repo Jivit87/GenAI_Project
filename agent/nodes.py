@@ -5,103 +5,109 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from agent.tools import predict_property_price, get_comparable_properties
 from utils.report_formatter import format_report
 
-# We will build this RAG file in the next step (Step 5)
+# Try to load the RAG search function. If it fails, use a backup warning message.
 try:
-    from rag.retriever import query_rag
+    from rag.retriever import search_text_database
 except ImportError:
-    # Fallback if RAG isn't built yet
-    def query_rag(query: str, top_k: int = 4):
-        return ["RAG System not fully initialized yet."]
+    def search_text_database(query: str, max_results: int = 3):
+        return ["RAG System not built yet."]
 
 
 def intake_node(state: dict) -> dict:
-    """1. Checks if all required inputs are present."""
-    # In a real app we'd validate required fields here.
-    # For now, we trust the Streamlit form provided them.
+    """Step 1: Check the data coming in from the user website."""
     return state
 
 
 def price_prediction_node(state: dict) -> dict:
-    """2. Runs the joblib ML model to predict property price."""
-    features = state["property_features"]
+    """Step 2: Ask the Machine Learning model to calculate the house price."""
+    property_details = state["property_features"]
     
-    # We pass features as a dict inside another dict to match LangChain's Tool schema
-    result = predict_property_price.invoke({"features": features})
+    # Send the details to the ML model wrapper
+    prediction_result = predict_property_price.invoke({"features": property_details})
     
-    state["predicted_price"] = result["predicted_price"]
-    state["price_range"]     = result["price_range"]
+    # Save the answers back into our state (the shared notebook)
+    state["predicted_price"] = prediction_result["predicted_price"]
+    state["price_range"]     = prediction_result["price_range"]
 
-    # Also grab comparable properties (synthetic data for this project)
-    comps = get_comparable_properties.invoke({
-        "location": str(features.get("latitude", "Unknown")),
+    # Also grab 3 fake similar properties to show the user
+    similar_properties = get_comparable_properties.invoke({
+        "location": str(property_details.get("latitude", "Unknown Area")),
         "price": state["predicted_price"],
-        "size": features.get("total_flat_area", 1500)
+        "size": property_details.get("total_flat_area", 1500)
     })
-    state["comparable_properties"] = comps
+    state["comparable_properties"] = similar_properties
     
     return state
 
 
 def rag_retrieval_node(state: dict) -> dict:
-    """3. Searches FAISS vector store for relevant market advice."""
-    # Build a query based on we know so far
-    query = (
-        f"Real estate market trends for area. "
+    """Step 3: Search our saved text files for helpful market advice."""
+    search_query = (
+        f"Real estate market trends. "
         f"Investment outlook for properties around ${state['predicted_price']}."
     )
-    docs = query_rag(query, top_k=3)
-    state["retrieved_market_docs"] = docs
+    
+    # Get top 3 paragraphs from our FAISS database
+    helpful_documents = search_text_database(search_query, max_results=3)
+    state["retrieved_market_docs"] = helpful_documents
+    
     return state
 
 
 def market_analysis_node(state: dict) -> dict:
-    """4. Uses Groq LLM + RAG documents to write a market analysis."""
-    # Initialize the Groq model
+    """Step 4: Ask the Groq AI to read the documents and write an analysis."""
     api_key = os.getenv("GROQ_API_KEY", "")
+    
+    # Safety check: Prevent crash if API key is missing
     if not api_key or api_key == "your_groq_api_key_here":
-        state["market_analysis"] = "Groq API key is missing. Please set it in the .env file to enable Market Analysis."
+        state["market_analysis"] = "Groq API key is missing. Add it to .env to enable the AI writer."
         return state
 
-    llm = ChatGroq(
+    # Connect to the AI Model
+    ai_model = ChatGroq(
         model_name="llama-3.1-8b-instant",
-        temperature=0.3,
+        temperature=0.3, # Low temperature keeps the AI factual and boring, which is good here
         groq_api_key=api_key
     )
 
-    context = "\n".join(state.get("retrieved_market_docs", []))
+    # Combine all the text files we found into one big string
+    found_context = "\n".join(state.get("retrieved_market_docs", []))
     
-    sys_prompt = "You are a professional real estate market analyst. Be concise."
-    user_prompt = f"""
+    # Set the rules for the AI
+    system_rules = "You are a professional real estate analyst. Be concise."
+    user_request = f"""
     Write a short 2-paragraph market analysis for a property.
     Predicted Price: ${state['predicted_price']:,.2f}
     
-    MARKET CONTEXT (Use ONLY this information):
-    {context}
+    MARKET CONTEXT (Read this to get your facts):
+    {found_context}
     
     RULES:
-    - Never invent statistics or facts not present in the context.
+    - Never invent statistics that are not in the context.
     - End with a one-sentence investment risk summary (Low/Medium/High).
     """
 
+    # Send the request to the AI
     messages = [
-        SystemMessage(content=sys_prompt),
-        HumanMessage(content=user_prompt)
+        SystemMessage(content=system_rules),
+        HumanMessage(content=user_request)
     ]
+    ai_response = ai_model.invoke(messages)
     
-    response = llm.invoke(messages)
-    state["market_analysis"] = response.content
+    # Save what the AI wrote
+    state["market_analysis"] = ai_response.content
     return state
 
 
 def report_generation_node(state: dict) -> dict:
-    """5. Formats everything into a clean presentation string."""
+    """Step 5: Organize all the data into a clean, presentation-ready format."""
     state["advisory_report"] = format_report(state)
     return state
 
 
 def disclaimer_node(state: dict) -> dict:
-    """6. Appends the mandatory legal disclaimer."""
-    disclaimer = (
+    """Step 6: Stamp a legal warning at the end of the report."""
+    legal_warning = (
         "**LEGAL DISCLAIMER:** This report has been generated by an AI assistant "
         "and is for informational purposes only. It does not constitute professional "
         "financial or legal advice. The machine learning price predictions are estimates "
@@ -109,6 +115,6 @@ def disclaimer_node(state: dict) -> dict:
     )
     
     if "advisory_report" in state and isinstance(state["advisory_report"], dict):
-        state["advisory_report"]["disclaimer"] = disclaimer
+        state["advisory_report"]["disclaimer"] = legal_warning
         
     return state
