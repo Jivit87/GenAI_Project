@@ -2,196 +2,167 @@ import streamlit as st
 import joblib
 import pandas as pd
 import numpy as np
+import os
+from dotenv import load_dotenv
+from agent.graph import build_graph
+
+# Load environment variables (API Keys)
+load_dotenv()
 
 # Configure the Streamlit page layout and metadata
 st.set_page_config(
-    page_title="Intelligent Real Estate Advisory",
-    page_icon="🏡",
+    page_title="Intelligent Real Estate Advisor",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Apply custom CSS styling for the application interface
+# Apply custom CSS styling for a more professional, real-estate focused look
 st.markdown("""
 <style>
-    .reportview-container .main .block-container{
-        padding-top: 2rem;
-    }
+    .reportview-container .main .block-container{ padding-top: 2rem; }
     h1 {
-        background: -webkit-linear-gradient(45deg, #1f77b4, #ff7f0e);
+        background: -webkit-linear-gradient(45deg, #2c3e50, #2980b9);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
     }
-    div[data-testid="stMetricValue"] {
-        font-size: 3rem;
-        color: #1f77b4;
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        font-weight: 600;
     }
+    div[data-testid="stMetricValue"] { font-size: 2.5rem; color: #2980b9; }
 </style>
 """, unsafe_allow_html=True)
 
-import os
-
-# Function to load the pre-trained machine learning model and feature scaler
+# Cache models to save memory and time
 @st.cache_resource
 def load_models():
-    """Loads the property price prediction model and the associated scaler."""
-    base_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_file_path = os.path.join(base_directory, 'Model', 'house_price_model.joblib')
-    scaler_file_path = os.path.join(base_directory, 'Model', 'scaler.joblib')
-    
-    price_prediction_model = joblib.load(model_file_path)
-    feature_scaler = joblib.load(scaler_file_path)
-    return price_prediction_model, feature_scaler
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    model_path = os.path.join(base_dir, 'Model', 'house_price_model.joblib')
+    scaler_path = os.path.join(base_dir, 'Model', 'scaler.joblib')
+    return joblib.load(model_path), joblib.load(scaler_path)
 
-# Attempt to load models and handle potential errors gracefully
 try:
-    price_prediction_model, feature_scaler = load_models()
-except Exception as loading_error:
-    st.error(f"Error loading models: {loading_error}. Please ensure you are running this from the correct directory.")
+    price_model, feature_scaler = load_models()
+    agent_app = build_graph()
+except Exception as e:
+    st.error(f"Initialization Error: {e}")
     st.stop()
 
-# Set up the main application header and description
-st.title("🏡 AI Property Price Predictor")
-st.markdown("### Predict real estate property values with high accuracy using our advanced Machine Learning model.")
-st.write("---")
+st.title("🏡 Intelligent Real Estate Advisor")
+st.markdown("### Milestone 2: AI-Powered Investment Analysis & Property Valuation")
 
-# Render instructions in the sidebar
+# Sidebar for User Preferences and Mode Selection
 with st.sidebar:
-    st.header("💡 How to use")
-    st.write("1. Fill in the property details.")
-    st.write("2. Make sure latitude and longitude are accurate.")
-    st.write("3. Click Predict Market Price below.")
-    st.write("---")
-
-# Create a form to collect user inputs for the property features
-with st.form("property_prediction_form"):
+    st.header("🎯 Advisor Settings")
+    app_mode = st.radio("Choose Mode", ["Quick Price Prediction", "Full AI Advisory Report"])
     
-    # Section 1: Basic room and floor information
-    st.subheader("1. General Information")
+    st.write("---")
+    st.subheader("👤 Your Profile")
+    user_goal = st.selectbox(
+        "Primary Goal", 
+        ["Personal Residence", "Long-term Rental", "Flipping / Short-term Profit", "Wealth Preservation"]
+    )
+    user_budget = st.number_input("Target Budget ($)", min_value=0, value=600000, step=50000)
+    
+    st.write("---")
+    if not os.getenv("GROQ_API_KEY"):
+        st.warning("⚠️ GROQ_API_KEY missing in .env. AI Agent reasoning will be disabled.")
+
+# Main Form for Property Details
+with st.form("property_details_form"):
+    st.subheader("🏠 Property Details")
     col1, col2, col3 = st.columns(3)
+    
     with col1:
-        num_bedrooms = st.number_input("No of Bedrooms", min_value=1, max_value=30, value=3, step=1)
+        num_bedrooms = st.number_input("No of Bedrooms", 1, 15, 3)
+        num_bathrooms = st.number_input("No of Bathrooms", 0.5, 10.0, 2.0, 0.25)
+        asking_price = st.number_input("Current Asking Price ($)", min_value=1, value=500000, help="What is the seller asking for?")
+        
     with col2:
-        num_bathrooms = st.number_input("No of Bathrooms", min_value=1, max_value=10, value=2, step=1)
+        flat_area = st.number_input("Flat Area (sq ft)", 100, 15000, 1500)
+        lot_area = st.number_input("Lot Area (sq ft)", 100, 500000, 5000)
+        num_floors = st.number_input("No of Floors", 1.0, 4.0, 1.0, 0.5)
+
     with col3:
-        num_floors = st.number_input("No of Floors", min_value=1, max_value=5, value=1, step=1)
-        
-    st.write("---")
-    
-    # Section 2: Area measurements for different parts of the property
-    st.subheader("2. Area Details (in Sqft)")
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        total_flat_area = st.number_input("Flat Area", min_value=100.0, value=1500.0, step=10.0)
-        living_area_after_renovation = st.number_input("Living Area after Renovation", min_value=100.0, value=1500.0, step=10.0)
-    with col5:
-        total_lot_area = st.number_input("Lot Area", min_value=100.0, value=5000.0, step=10.0)
-        lot_area_after_renovation = st.number_input("Lot Area after Renovation", min_value=100.0, value=5000.0, step=10.0)
-    with col6:
-        basement_area = st.number_input("Basement Area", min_value=0, value=0, step=10)
-        area_excluding_basement = st.number_input("Area from Basement", min_value=100.0, value=1500.0, step=10.0, help="Typically Flat Area - Basement Area")
+        latitude = st.number_input("Latitude", value=47.5112, format="%.4f")
+        longitude = st.number_input("Longitude", value=-122.257, format="%.4f")
+        property_condition = st.selectbox("Condition", ["Bad", "Fair", "Good", "Excellent"])
 
     st.write("---")
-    
-    # Section 3: Geographical and historical age information
-    st.subheader("3. Location & Build Year")
-    col7, col8, col9 = st.columns(3)
-    with col7:
-        property_latitude = st.number_input("Latitude", value=47.5112, format="%.4f")
-    with col8:
-        property_longitude = st.number_input("Longitude", value=-122.257, format="%.4f")
-    with col9:
-        property_age_years = st.number_input("Age of House (in Years)", min_value=0, value=30, step=1)
-        year_renovated = st.number_input("Renovated Year", min_value=0, value=0, step=1, help="0 if never renovated")
-        
-    st.write("---")
-    
-    # Section 4: Qualitative assessments of the property
-    st.subheader("4. Condition & Quality")
-    col10, col11, col12 = st.columns(3)
-    with col10:
-        property_overall_grade = st.slider("Overall Grade", 1, 10, 7, help="1: Poor, 10: Excellent")
-    with col11:
-        has_waterfront_view = st.selectbox("Waterfront View", ["No", "Yes"])
-    with col12:
-        property_condition = st.selectbox("Condition of the House", ["Bad", "Fair", "Good", "Excellent", "Okay"])
-        
-    st.write("---")
-    
-    # Section 5: Viewing history
-    st.subheader("5. Prior History")
-    col13, col14 = st.columns(2)
-    with col13:
-        times_visited = st.selectbox("No of Times Visited", ["None", "Once", "Twice", "Thrice", "Four"])
+    submit_btn = st.form_submit_button("Run Analysis", use_container_width=True)
 
-    st.write(" \n")
+if submit_btn:
+    # Prepare features for the model
+    # (Mapping logic remains same as per training requirements)
+    is_waterfront = 0
+    is_cond_exc = 1 if property_condition == "Excellent" else 0
+    is_cond_fair = 1 if property_condition == "Fair" else 0
+    is_cond_good = 1 if property_condition == "Good" else 0
+    is_cond_okay = 1 if property_condition == "Okay" else 0
     
-    # Submit button for the prediction form
-    predict_button_clicked = st.form_submit_button("Predict Market Price", use_container_width=True)
+    # Simple defaults for missing features
+    features = {
+        "no_of_bedrooms": num_bedrooms,
+        "no_of_bathrooms": num_bathrooms,
+        "total_flat_area": flat_area,
+        "total_lot_area": lot_area,
+        "no_of_floors": num_floors,
+        "waterfront_view": 0,
+        "overall_grade": 7,
+        "area_excluding_basement": flat_area,
+        "basement_area": 0,
+        "age_of_house": 20,
+        "renovated_year": 0,
+        "latitude": latitude,
+        "longitude": longitude,
+        "living_area_after_renovation": flat_area,
+        "lot_area_after_renovation": lot_area,
+        "condition_excellent": is_cond_exc,
+        "condition_fair": is_cond_fair,
+        "condition_good": is_cond_good,
+        "condition_okay": is_cond_okay,
+        "visited_once": 0,
+        "visited_thrice": 0,
+        "visited_twice": 0,
+        "asking_price": asking_price
+    }
 
-# Process the inputs and generate a prediction when the form is submitted
-if predict_button_clicked:
-    # Convert categorical waterfront view to numerical binary feature
-    is_waterfront_mapped = 1 if has_waterfront_view == 'Yes' else 0
+    if app_mode == "Quick Price Prediction":
+        with st.spinner("Calculating Baseline Market Value..."):
+            # Direct model call for speed
+            from agent.tools import predict_property_price
+            res = predict_property_price.invoke({"features": features})
+            st.success("Analysis Complete")
+            st.metric("Estimated Market Value", f"${res['predicted_price']:,.2f}")
+            st.info(f"Price Range: ${res['price_range']['low']:,.2f} - ${res['price_range']['high']:,.2f}")
     
-    # One-hot encode the property condition
-    is_condition_excellent = 1 if property_condition == 'Excellent' else 0
-    is_condition_fair = 1 if property_condition == 'Fair' else 0
-    is_condition_good = 1 if property_condition == 'Good' else 0
-    is_condition_okay = 1 if property_condition == 'Okay' else 0
-    
-    # One-hot encode the number of times visited
-    visited_once = 1 if times_visited == 'Once' else 0
-    visited_twice = 1 if times_visited == 'Twice' else 0
-    visited_thrice = 1 if times_visited == 'Thrice' else 0
-
-    # Assemble all processed features into a single NumPy array for the model
-    # Note: The order must match the feature selection order used during model training
-    input_features_array = np.array([
-        num_bedrooms,
-        num_bathrooms,
-        total_flat_area,
-        total_lot_area,
-        num_floors,
-        is_waterfront_mapped,
-        property_overall_grade,
-        area_excluding_basement,
-        basement_area,
-        property_age_years,
-        year_renovated,
-        property_latitude,
-        property_longitude,
-        living_area_after_renovation,
-        lot_area_after_renovation,
-        is_condition_excellent,
-        is_condition_fair,
-        is_condition_good,
-        is_condition_okay,
-        visited_once,
-        visited_thrice,
-        visited_twice
-    ]).reshape(1, -1)
-    
-    # Display a loading spinner while processing the prediction
-    with st.spinner('Analyzing property data and scaling features...'):
-        try:
-            # Apply the pre-fitted scaler to normalize user inputs
-            scaled_input_features = feature_scaler.transform(input_features_array)
+    else:
+        # FULL AGENTIC WORKFLOW
+        with st.spinner("🤖 Agent is reasoning, searching RAG docs, and evaluating market trends..."):
+            initial_state = {
+                "property_features": features,
+                "user_preferences": {"goal": user_goal, "budget": user_budget}
+            }
+            final_state = agent_app.invoke(initial_state)
             
-            # Predict the property value using the trained model
-            predicted_price = price_prediction_model.predict(scaled_input_features)
+            report = final_state["advisory_report"]
             
-            # Display the result in a highlighted metric component
             st.write("---")
-            st.subheader("📊 Analysis Complete")
-            st.metric(label="Estimated Property Value", value=f"${predicted_price[0]:,.2f}")
+            tab1, tab2, tab3 = st.tabs(["📝 Summary & Advice", "🏘️ Comparables", "⚖️ Legal Disclaimer"])
             
-            st.success("Successfully generated market value estimate based on input housing parameters.")
-            
-        except ValueError as value_error:
-            # Handle cases where the input feature shape or types are incorrect
-            st.error(f"Shape Mismatch Error: Please verify the model input features. Details: {value_error}")
-        except Exception as unexpected_error:
-            # Catch-all for any other unanticipated errors
-            st.error(f"An unexpected error occurred: {unexpected_error}")
+            with tab1:
+                st.markdown(report["summary"])
+                st.write("---")
+                st.subheader("💡 Expert Analysis")
+                st.markdown(report["analysis"])
+                
+            with tab2:
+                st.subheader("Real Historical Comparables (Nearest Matches)")
+                st.markdown(report["comparables"])
+                
+            with tab3:
+                st.info(report["disclaimer"])

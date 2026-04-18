@@ -11,3 +11,4 @@ rag/faiss_index/
 venv/
 .venv/
 env/
+.DS_Store

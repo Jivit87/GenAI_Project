@@ -7,6 +7,15 @@ sdk: docker
 app_port: 7860
 ---
 
+---
+title: GenAI Real Estate Advisor
+emoji: 🏡
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # 🏠 House Sale Price Prediction
 
 A machine learning project that predicts house sale prices using the **King County House Sales Dataset**. The project compares **Linear Regression** and **Random Forest Regression** models, with Random Forest achieving the best performance (**R² = 0.89**).

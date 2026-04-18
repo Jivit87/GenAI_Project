@@ -12,21 +12,26 @@ except ImportError:
 
 
 def intake_node(state: dict) -> dict:
+    """Validates and prepares the initial state."""
+    if not state.get("user_preferences"):
+        state["user_preferences"] = {"goal": "Standard Residential", "budget": 0}
     return state
 
 
 def price_prediction_node(state: dict) -> dict:
     property_details = state["property_features"]
     
+    # 1. Get the baseline prediction
     prediction_result = predict_property_price.invoke({"features": property_details})
-    
     state["predicted_price"] = prediction_result["predicted_price"]
     state["price_range"]     = prediction_result["price_range"]
 
+    # 2. Search for real comparable properties using the new signature
     similar_properties = get_comparable_properties.invoke({
-        "location": str(property_details.get("latitude", "Unknown Area")),
-        "price": state["predicted_price"],
-        "size": property_details.get("total_flat_area", 1500)
+        "latitude":  property_details.get("latitude", 47.5),
+        "longitude": property_details.get("longitude", -122.2),
+        "price":     state["predicted_price"],
+        "bedrooms":  int(property_details.get("no_of_bedrooms", 3))
     })
     state["comparable_properties"] = similar_properties
     
@@ -34,9 +39,10 @@ def price_prediction_node(state: dict) -> dict:
 
 
 def rag_retrieval_node(state: dict) -> dict:
+    # Build a query based on the property's price bracket and location
     search_query = (
-        f"Real estate market trends. "
-        f"Investment outlook for properties around ${state['predicted_price']}."
+        f"Investment outlook for properties around ${state['predicted_price']}. "
+        f"Real estate trends in King County Seattle area."
     )
     
     helpful_documents = search_text_database(search_query, max_results=3)
@@ -49,28 +55,50 @@ def market_analysis_node(state: dict) -> dict:
     api_key = os.getenv("GROQ_API_KEY", "")
     
     if not api_key or api_key == "your_groq_api_key_here":
-        state["market_analysis"] = "Groq API key is missing. Add it to .env to enable the AI writer."
+        state["market_analysis"] = "Decision Engine: AI Analysis Disabled (API Key missing)."
         return state
 
     ai_model = ChatGroq(
         model_name="llama-3.1-8b-instant",
-        temperature=0.3,
+        temperature=0.2,
         groq_api_key=api_key
     )
 
     found_context = "\n".join(state.get("retrieved_market_docs", []))
     
-    system_rules = "You are a professional real estate analyst. Be concise."
-    user_request = f"""
-    Write a short 2-paragraph market analysis for a property.
-    Predicted Price: ${state['predicted_price']:,.2f}
+    # Logic for Buy/Avoid recommendation
+    # We compare the 'Asking Price' (if provided) vs the 'Predicted Price'
+    asking_price = state["property_features"].get("asking_price", state["predicted_price"])
+    value_gap = ((state["predicted_price"] - asking_price) / asking_price) * 100
     
-    MARKET CONTEXT (Read this to get your facts):
+    recommendation = "NEUTRAL (Market Value)"
+    if value_gap > 5:
+        recommendation = "BUY (Underpriced / High Value)"
+    elif value_gap < -5:
+        recommendation = "AVOID (Overpriced)"
+
+    user_goal = state["user_preferences"].get("goal", "Personal Residence")
+    
+    system_rules = "You are a senior real estate investment advisor. Be analytical, firm, and data-driven."
+    user_request = f"""
+    Analyze this property for a client whose goal is: {user_goal}.
+    
+    DATA POINTS:
+    - Asking Price: ${asking_price:,.2f}
+    - Predicted Market Value: ${state['predicted_price']:,.2f}
+    - Value Gap: {value_gap:.1f}%
+    - Initial Recommendation: {recommendation}
+    
+    MARKET CONTEXT (RAG):
     {found_context}
     
-    RULES:
-    - Never invent statistics that are not in the context.
-    - End with a one-sentence investment risk summary (Low/Medium/High).
+    TASK:
+    1. Write a 3-paragraph analysis. 
+    2. Paragraph 1: Price evaluation vs asking price.
+    3. Paragraph 2: How current market trends (RAG context) affect this specific property.
+    4. Paragraph 3: Final investment verdict based on the user's goal ({user_goal}).
+    
+    Format the output with clear headers.
     """
 
     messages = [

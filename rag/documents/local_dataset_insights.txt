@@ -1,0 +1,23 @@
+# Local Real Estate Dataset Insights (Historical Data)
+
+This document provides statistical context based directly on the historical King County house sales dataset (~21,613 records).
+
+## 1. Price Context by Bedrooms
+- **1 Bedroom**: Median price is $299,000. These are entry-level properties.
+- **2 Bedrooms**: Median price is $374,000.
+- **3 Bedrooms**: The most frequent configuration (9,823 units). Median price is $413,000.
+- **4 Bedrooms**: Significant step up. Median price is $550,000.
+- **5-6 Bedrooms**: Large family homes. Median prices range from $620,000 to $650,000.
+
+## 2. Condition Impact on Value
+Historical data shows a clear premium for property upkeep:
+- **Excellent Condition**: Average Sale Price is ~$568,000.
+- **Fair/Good Condition**: Average Sale Price ranges from $495,000 to $514,000.
+- **Bad/Okay Condition**: Average Sale Price drops significantly to ~$320,000.
+
+## 3. General Statistics
+- The median property in this dataset has a flat area of approximately 1,900 sqft.
+- The top 10% of the market (Premium segment) starts above $850,000.
+- Most properties in the dataset were sold between 2016 and 2017.
+
+*Note for Advisor: When the user's expected price or asking price diverges significantly from these medians (e.g., a 3-bed asking for $800k), highlight that the property is in the "Luxury/Outlier" segment compared to historical norms.*

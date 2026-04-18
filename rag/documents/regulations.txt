@@ -1,5 +1,9 @@
-RERA (Real Estate Regulation Act) mandates developer registration, protecting buyers from project delays.
-Stamp duty is a mandatory state tax and typically ranges from 4% to 8% of the total property value.
-Capital gains tax: Short-term (owned < 2 years) is taxed at the income slab rate; Long-term is taxed at 20% with indexation benefits.
-Foreign investment in real estate is tightly governed by FEMA (Foreign Exchange Management Act) regulations.
-Rental income must be declared under 'Income from House Property' for tax purposes if it exceeds standard deduction limits.
+# Seattle & King County Real Estate Regulations
+
+1. **Short-Term Rental Restrictions**: Most condos in Seattle buildings restricted short-term rentals (Airbnb/VRBO) through their HOA bylaws. Single-family homes are generally permitted but require a Short-Term Rental Operator's License.
+
+2. **Fair Housing & Tenant Laws**: King County has some of the strictest tenant protection laws in the country. This includes the "First-in-Time" ordinance and limits on security deposits.
+
+3. **Climate & Environmental Disclosures**: Sellers must disclose information about flood zones, landslide risks (common in hilly Seattle areas), and seismic activity potential.
+
+4. **ADU/DADU Zoning**: The "Housing Choices" legislation has legalized detached accessory dwelling units (DADUs) in many residential zones, allowing for higher density and investment potential.
