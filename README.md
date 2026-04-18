@@ -1,191 +1,152 @@
 ---
 title: Real Estate Prediction
-emoji: 🏠
 colorFrom: blue
 colorTo: green
 sdk: docker
 app_port: 7860
 ---
 
----
-title: GenAI Real Estate Advisor
-emoji: 🏡
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
+# House Sale Price Prediction and Intelligent AI Advisor
 
-# 🏠 House Sale Price Prediction
-
-A machine learning project that predicts house sale prices using the **King County House Sales Dataset**. The project compares **Linear Regression** and **Random Forest Regression** models, with Random Forest achieving the best performance (**R² = 0.89**).
+A multi-stage real estate intelligence project that combines machine learning price prediction with an agentic AI advisory system. The project utilizes the King County House Sales Dataset and advanced RAG (Retrieval-Augmented Generation) to provide data-driven investment advice.
 
 ---
 
-## 🚀 Live Demo
-**Hosted on Hugging Face Spaces:** [Link to your Space](https://huggingface.co/spaces/parthrajsingh/real-estate-prediction)
+## Live Demo
+**Hosted on Hugging Face Spaces:** [Link to Space](https://huggingface.co/spaces/parthrajsingh/real-estate-prediction)
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
+- [Milestone 1: Price Prediction](#milestone-1-price-prediction)
+- [Milestone 2: Intelligent AI Advisor](#milestone-2-intelligent-ai-advisor)
 - [Dataset](#dataset)
-- [Project Workflow](#project-workflow)
-- [Results](#results)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Deployment](#deployment)
 
 ---
 
-## 🔍 Overview
+## Overview
 
-This Jupyter Notebook (`GenAI_MidSem.ipynb`) performs an end-to-end machine learning pipeline for predicting house sale prices. It covers:
+This project has evolved from a simple predictive model into a comprehensive decision-support system. It covers:
 
-1. **Data Loading & Exploration** — Understanding the dataset structure and statistics
-2. **Data Preprocessing** — Handling missing values, encoding categorical features, and feature selection
-3. **Model Training & Evaluation** — Comparing Linear Regression vs. Random Forest Regression
-4. **Model Selection** — Automatically selecting the best-performing model based on R² score
+1. **Machine Learning Pipeline** - End-to-end data preprocessing and model training.
+2. **Agentic AI Advisor** - A reasoning system built with LangGraph that analyzes market trends and property features.
+3. **RAG Integration** - Retrieval-Augmented Generation using FAISS to ground AI advice in real-world market data and dataset statistics.
 
 ---
 
-## 📊 Dataset
+## Milestone 1: Price Prediction
+
+The foundation of the project is a regression model that predicts house sale prices.
+- **Preprocessing**: Median imputation for missing values, label encoding for waterfront views, and one-hot encoding for house conditions.
+- **Model Comparison**: Evaluated Linear Regression vs. Random Forest Regression.
+- **Result**: Random Forest achieved an R-squared score of **0.89**, significantly outperforming the baseline.
+
+---
+
+## Milestone 2: Intelligent AI Advisor
+
+The latest update transforms the system into an agentic advisor that mimics real-world investor thinking.
+
+### Key Features
+- **Sequential Reasoning**: Uses LangGraph to orchestrate a workflow (Intake -> Prediction -> RAG -> Analysis -> Report).
+- **Localized RAG**: Incorporates a vector database (FAISS) containing 2024-2025 Seattle market trends and specific insights derived from the King County dataset.
+- **Investment Verdicts**: The AI generates explicit "Buy", "Hold", or "Avoid" recommendations based on the "Value Gap" between asking prices and predicted market values.
+- **Real Comparable Search**: A custom tool that searches the 21,000+ record dataset to find the top 3 closest historical matches based on location and bedroom count.
+
+---
+
+## Dataset
 
 | Property | Details |
 |---|---|
-| **File** | `Data/houseDataset.csv` |
+| **File** | Data/houseDataset.csv |
 | **Rows** | 21,609 |
 | **Columns** | 21 |
-| **Target Variable** | `Sale Price` |
-
-### Features
-
-| Feature | Type | Description |
-|---|---|---|
-| ID | int64 | Unique identifier for each house |
-| Date House was Sold | object | Date of sale |
-| Sale Price | int64 | **Target** — Price the house was sold for |
-| No of Bedrooms | int64 | Number of bedrooms |
-| No of Bathrooms | float64 | Number of bathrooms |
-| Flat Area (in Sqft) | float64 | Living area in square feet |
-| Lot Area (in Sqft) | float64 | Lot size in square feet |
-| No of Floors | float64 | Number of floors |
-| Waterfront View | object | Whether the property has a waterfront view (Yes/No) |
-| No of Times Visited | object | Number of times the property was visited |
-| Condition of the House | object | Overall condition rating |
-| Overall Grade | int64 | Overall grade given to the house |
-| Area of the House from Basement (in Sqft) | float64 | Total area above basement |
-| Basement Area (in Sqft) | int64 | Basement area in square feet |
-| Age of House (in Years) | int64 | Age of the house |
-| Renovated Year | int64 | Year of renovation (0 if never renovated) |
-| Zipcode | float64 | ZIP code location |
-| Latitude | float64 | Latitude coordinate |
-| Longitude | float64 | Longitude coordinate |
-| Living Area after Renovation (in Sqft) | float64 | Living area post-renovation |
-| Lot Area after Renovation (in Sqft) | int64 | Lot area post-renovation |
+| **Target Variable** | Sale Price |
 
 ---
 
-## ⚙️ Project Workflow
+## Tech Stack
 
-### 1. Data Loading & Exploration
-- Load dataset from CSV using Pandas
-- Display dataset shape, first/last rows, summary statistics (`describe()`), data types (`info()`), and missing value counts (`isnull().sum()`)
-
-### 2. Data Preprocessing
-
-#### Missing Value Handling
-- **Numerical columns** (Bathrooms, Flat Area, Lot Area, etc.) → Imputed with **median** using `SimpleImputer`
-- **Categorical columns** (Zipcode, Waterfront View, Condition, Times Visited) → Imputed with **most frequent** value using `SimpleImputer`
-
-#### Feature Engineering
-- **Label Encoding** — `Waterfront View` (Yes/No → 1/0) using `LabelEncoder`
-- **One-Hot Encoding** — `Condition of the House` and `No of Times Visited` using `pd.get_dummies(drop_first=True)`
-- **Dropped Columns** — `ID`, `Date House was Sold`, `Zipcode` (non-predictive features)
-
-### 3. Train-Test Split
-- **80% Training** / **20% Testing** with `random_state=42` for reproducibility
-
-### 4. Model Training & Evaluation
-- **Linear Regression** — Baseline model
-- **Random Forest Regressor** — Ensemble model with `n_estimators=200`
-
-### 5. Model Selection
-- Automatically selects the model with the higher R² score
-
----
-
-## 📈 Results
-
-| Metric | Linear Regression | Random Forest |
-|---|---|---|
-| **MAE** | 93,815.26 | 56,430.32 |
-| **RMSE** | 125,725.51 | 83,673.56 |
-| **R² Score** | 0.7523 | **0.8903** ✅ |
-
-> **Best Model: Random Forest Regressor** — Selected automatically based on the highest R² score.
-
----
-
-## 🛠️ Tech Stack
-
-| Library | Purpose |
+| Component | Technology |
 |---|---|
-| **Python 3.11** | Programming language |
-| **NumPy** | Numerical computations |
-| **Pandas** | Data manipulation and analysis |
-| **scikit-learn** | Machine learning models, preprocessing, and evaluation |
-
-### Key scikit-learn Modules Used
-- `sklearn.impute.SimpleImputer` — Missing value imputation
-- `sklearn.preprocessing.LabelEncoder` — Label encoding for categorical features
-- `sklearn.model_selection.train_test_split` — Splitting data into train/test sets
-- `sklearn.linear_model.LinearRegression` — Linear Regression model
-- `sklearn.ensemble.RandomForestRegressor` — Random Forest model
-- `sklearn.metrics` — MAE, MSE, R² score evaluation
+| **Programming** | Python 3.10+ |
+| **ML Engine** | scikit-learn, Pandas, NumPy |
+| **AI Orchestration** | LangGraph, LangChain |
+| **LLM Provider** | Groq (Llama 3.1) |
+| **Vector DB** | FAISS |
+| **Frontend** | Streamlit |
+| **Deployment** | Docker, Hugging Face Spaces |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 GenAI_Project/
-├── Data/
-│   └── houseDataset.csv       # House sales dataset (21,609 records)
-├── GenAI_MidSem.ipynb         # Main Jupyter Notebook
-└── README.md                  # Project documentation
+├── agent/             # LangGraph nodes, state, and tools
+├── rag/               # RAG logic and indexed documents
+├── Frontend/          # Streamlit application
+├── Model/             # Trained joblib models and scalers
+├── Data/              # House sales dataset
+├── utils/             # Preprocessing and formatting utilities
+├── Dockerfile         # Deployment configuration
+└── requirements.txt   # Project dependencies
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- Jupyter Notebook or Google Colab
+- Python 3.10+
+- Groq API Key (for the AI Advisor)
 
 ### Installation
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd GenAI_Project
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd GenAI_Project
+   ```
 
-# Install dependencies
-pip install numpy pandas scikit-learn jupyter
+2. **Set up environment**:
+   Create a `.env` file in the root directory:
+   ```env
+   GROQ_API_KEY=your_actual_key_here
+   ```
 
-# Launch the notebook
-jupyter notebook GenAI_MidSem.ipynb
-```
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Running on Google Colab
-1. Upload `GenAI_MidSem.ipynb` to [Google Colab](https://colab.research.google.com/)
-2. Upload `Data/houseDataset.csv` to the Colab runtime
-3. Run all cells sequentially
+4. **Launch the advisor**:
+   ```bash
+   export PYTHONPATH=$PYTHONPATH:.
+   streamlit run Frontend/app.py
+   ```
 
 ---
 
-## 📝 License
+## Deployment
+
+This project is Dockerized for easy deployment on Cloud platforms or Hugging Face Spaces.
+
+### Hugging Face Deployment
+1. Create a new Space with the **Docker** SDK.
+2. Link your GitHub repository.
+3. Add `GROQ_API_KEY` as a **Secret** in the Space settings.
+4. The Space will automatically build and deploy using the provided `Dockerfile`.
+
+---
+
+## License
 
 This project is for educational purposes (Mid-Semester Examination).
