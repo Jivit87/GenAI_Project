@@ -13,7 +13,7 @@ A multi-stage real estate intelligence project that combines machine learning pr
 ---
 
 ## Live Demo
-**Hosted on Hugging Face Spaces:** [Link to Space](https://huggingface.co/spaces/parthrajsingh/real-estate-prediction)
+**Hosted on Hugging Face Spaces:** [Link to Space](https://huggingface.co/spaces/parthrajsingh/real-estate-analysis)
 
 ---
 
