@@ -21,6 +21,9 @@ COPY . .
 # Set PYTHONPATH so the agent and utils packages can be imported
 ENV PYTHONPATH=/app
 
+# Build the FAISS vector database during the image build process
+RUN python rag/build_index.py
+
 # IMPORTANT: Hugging Face Spaces requires port 7860
 EXPOSE 7860
 
