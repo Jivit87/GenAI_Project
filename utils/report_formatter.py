@@ -16,19 +16,20 @@ def format_report(state: dict) -> dict:
         )
     comps_formatted = "\n".join(comp_lines) if comp_lines else "No real comparables found in historical dataset."
 
-    # 2. Extract Recommendation from AI Analysis if possible
-    # (The AI writer now provides the definitive verdict based on User Goal)
-    recommendation_header = "AI Investment Verdict"
+    # 3. Format the RAG context (Market Trends)
+    market_docs = state.get("retrieved_market_docs", [])
+    market_trends_formatted = "\n\n---\n\n".join(market_docs) if market_docs else "No specific market trends retrieved for this query."
     
-    # 3. Assemble the report dictionary
+    # 4. Assemble the report dictionary
     return {
         "summary": (
             f"### 📈 Valuation Summary\n"
             f"**Property Details:** {int(features.get('no_of_bedrooms', 0))} Bed, {int(features.get('no_of_bathrooms', 0))} Bath, {int(features.get('total_flat_area', 0))} sqft\n\n"
-            f"**Predicted Market Value:** `${predicted_price:,.2f}`\n"
-            f"**90% Confidence Range:** `${price_range['low']:,.2f}` - `${price_range['high']:,.2f}`\n"
+            f"**Predicted Market Value:** {predicted_price:,.2f} USD\n"
+            f"**90% Confidence Range:** {price_range['low']:,.2f} USD - {price_range['high']:,.2f} USD\n"
         ),
-        "analysis": analysis,
-        "comparables": comps_formatted,
+        "analysis": analysis.replace("$", "USD "),
+        "comparables": comps_formatted.replace("$", "USD "),
+        "market_trends": market_trends_formatted.replace("$", "USD "),
         "disclaimer": ""  # Added later by the disclaimer node
     }

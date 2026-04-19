@@ -20,20 +20,34 @@ st.set_page_config(
 # Apply custom CSS styling for a more professional, real-estate focused look
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
     .reportview-container .main .block-container{ padding-top: 2rem; }
     h1 {
         background: -webkit-linear-gradient(45deg, #2c3e50, #2980b9);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
+        font-family: 'Inter', sans-serif;
     }
     .stTabs [data-baseweb="tab-list"] { gap: 24px; }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
         white-space: pre-wrap;
         font-weight: 600;
+        font-family: 'Inter', sans-serif;
     }
     div[data-testid="stMetricValue"] { font-size: 2.5rem; color: #2980b9; }
+    
+    /* Fix for text merging due to LaTeX/Math rendering */
+    .stMarkdown p {
+        font-family: 'Inter', sans-serif;
+        line-height: 1.6;
+        font-size: 1.05rem;
+    }
+    .stMarkdown .katex-html {
+        display: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -152,17 +166,22 @@ if submit_btn:
             report = final_state["advisory_report"]
             
             st.write("---")
-            tab1, tab2, tab3 = st.tabs(["📝 Summary & Advice", "🏘️ Comparables", "⚖️ Legal Disclaimer"])
+            tab1, tab2, tab3, tab4 = st.tabs(["📝 Summary & Advice", "📊 Market Trends", "🏘️ Comparables", "⚖️ Legal Disclaimer"])
             
             with tab1:
                 st.markdown(report["summary"])
                 st.write("---")
                 st.subheader("💡 Expert Analysis")
                 st.markdown(report["analysis"])
-                
+
             with tab2:
+                st.subheader("📍 Retrieved Market Insights (RAG)")
+                st.info("These are the most relevant market trends and data points retrieved from our knowledge base for your specific property and query.")
+                st.markdown(report["market_trends"])
+                
+            with tab3:
                 st.subheader("Real Historical Comparables (Nearest Matches)")
                 st.markdown(report["comparables"])
                 
-            with tab3:
+            with tab4:
                 st.info(report["disclaimer"])

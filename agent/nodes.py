@@ -79,7 +79,12 @@ def market_analysis_node(state: dict) -> dict:
 
     user_goal = state["user_preferences"].get("goal", "Personal Residence")
     
-    system_rules = "You are a senior real estate investment advisor. Be analytical, firm, and data-driven."
+    system_rules = (
+        "You are a senior real estate investment advisor. Use a professional, analytical tone. "
+        "IMPORTANT: You must use proper English grammar, including correct spacing between words and sentences. "
+        "Do not merge words or numbers together. Ensure all numbers are formatted with dollar signs and commas (e.g., $500,000) "
+        "and are followed by a space."
+    )
     user_request = f"""
     Analyze this property for a client whose goal is: {user_goal}.
     
